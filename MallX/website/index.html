@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MallX — كل اللي محتاجه في مول واحد</title>
+<meta name="description" content="MallX هو تطبيق المول الذكي الذي يتيح لك تصفح المحلات، طلب الطعام، حجز المواعيد وتتبع طلباتك في مكان واحد.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:  #3B82F6;
+    --accent:   #F59E0B;
+    --green:    #10B981;
+    --purple:   #8B5CF6;
+    --bg:       #0A0F1A;
+    --surface:  #0F172A;
+    --card:     #1E293B;
+    --border:   #334155;
+    --text-pri: #F1F5F9;
+    --text-sec: #94A3B8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text-pri);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ───────────────────────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    background: rgba(10, 15, 26, 0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 5%;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo {
+    font-size: 24px; font-weight: 900;
+    background: linear-gradient(135deg, var(--primary), var(--purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    color: var(--text-sec); text-decoration: none; font-size: 14px;
+    font-weight: 600; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--primary); }
+  .nav-cta {
+    background: var(--primary); color: white;
+    padding: 10px 24px; border-radius: 10px; font-weight: 700;
+    font-size: 14px; text-decoration: none; transition: background 0.2s;
+    font-family: 'Cairo', sans-serif;
+  }
+  .nav-cta:hover { background: #2563eb; }
+
+  /* ── HERO ──────────────────────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 120px 5% 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 50%, rgba(59,130,246,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 80% 30%, rgba(139,92,246,0.08) 0%, transparent 70%);
+  }
+  .hero-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 60px; align-items: center; max-width: 1200px; margin: 0 auto;
+    position: relative;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);
+    color: var(--primary); padding: 6px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 900; line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--primary), var(--purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 18px; color: var(--text-sec); line-height: 1.8;
+    margin-bottom: 36px; max-width: 520px;
+  }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn-primary-hero {
+    background: linear-gradient(135deg, var(--primary), #2563eb);
+    color: white; padding: 14px 32px; border-radius: 12px;
+    font-weight: 700; font-size: 16px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 8px 32px rgba(59,130,246,0.3);
+    font-family: 'Cairo', sans-serif;
+  }
+  .btn-primary-hero:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(59,130,246,0.4); }
+  .btn-outline-hero {
+    border: 1px solid var(--border); color: var(--text-pri);
+    padding: 14px 32px; border-radius: 12px;
+    font-weight: 600; font-size: 16px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: 'Cairo', sans-serif;
+  }
+  .btn-outline-hero:hover { border-color: var(--primary); background: rgba(59,130,246,0.05); }
+
+  /* ── PHONE MOCKUP ───────────────────────────────────────────────────── */
+  .phone-mockup {
+    position: relative; display: flex; justify-content: center;
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-20px); }
+  }
+  .phone-frame {
+    width: 260px; height: 520px;
+    background: var(--surface);
+    border-radius: 40px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+    position: relative;
+  }
+  .phone-notch {
+    width: 80px; height: 20px;
+    background: var(--bg); border-radius: 0 0 12px 12px;
+    margin: 0 auto 16px;
+  }
+  .phone-screen { padding: 0 12px; }
+  .phone-header {
+    background: linear-gradient(135deg, #1E3A5F, #1a0f3d);
+    border-radius: 14px; padding: 16px; margin-bottom: 10px;
+  }
+  .phone-header p { font-size: 11px; color: rgba(255,255,255,0.7); }
+  .phone-header h3 { font-size: 22px; font-weight: 900; color: white; }
+  .phone-card {
+    background: var(--card); border-radius: 10px; padding: 10px 12px;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border);
+  }
+  .phone-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .phone-card-text { font-size: 12px; }
+  .phone-card-title { color: var(--text-pri); font-weight: 700; }
+  .phone-card-sub   { color: var(--text-sec); font-size: 10px; }
+  .phone-badge {
+    margin-right: auto; background: rgba(59,130,246,0.15);
+    color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 700;
+  }
+  .glow-ring {
+    position: absolute; inset: -20px;
+    border-radius: 60px;
+    background: radial-gradient(ellipse at center, rgba(59,130,246,0.15) 0%, transparent 70%);
+    z-index: -1;
+  }
+
+  /* ── STATS ─────────────────────────────────────────────────────────── */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; margin: 80px auto; max-width: 1200px;
+  }
+  .stat { background: var(--surface); padding: 32px; text-align: center; }
+  .stat-num { font-size: 40px; font-weight: 900; color: var(--primary); }
+  .stat-label { color: var(--text-sec); font-size: 14px; margin-top: 4px; }
+
+  /* ── FEATURES ───────────────────────────────────────────────────────── */
+  .section { padding: 80px 5%; max-width: 1200px; margin: 0 auto; }
+  .section-tag {
+    display: inline-block; background: rgba(59,130,246,0.1);
+    color: var(--primary); padding: 4px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; margin-bottom: 16px; letter-spacing: 1px;
+  }
+  .section h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 900; margin-bottom: 16px; }
+  .section p.lead { font-size: 18px; color: var(--text-sec); max-width: 600px; line-height: 1.8; }
+
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; margin-top: 48px;
+  }
+  .feature-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .feature-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+  .feature-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 16px;
+  }
+  .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p  { color: var(--text-sec); font-size: 14px; line-height: 1.7; }
+
+  /* ── ROLES ──────────────────────────────────────────────────────────── */
+  .roles-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 20px; margin-top: 48px;
+  }
+  .role-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
+  }
+  .role-card::before {
+    content: attr(data-emoji);
+    position: absolute; top: -10px; left: -10px;
+    font-size: 80px; opacity: 0.05;
+  }
+  .role-card h3 { font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+  .role-card ul { list-style: none; }
+  .role-card ul li {
+    padding: 6px 0; color: var(--text-sec); font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .role-card ul li::before { content: '✓'; color: var(--green); font-weight: 700; }
+
+  /* ── PLANS ──────────────────────────────────────────────────────────── */
+  .plans-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; margin-top: 48px;
+  }
+  .plan-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; text-align: center; position: relative;
+  }
+  .plan-card.featured {
+    border-color: var(--primary);
+    background: linear-gradient(180deg, rgba(59,130,246,0.1) 0%, var(--card) 100%);
+  }
+  .plan-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--primary); color: white; padding: 4px 16px;
+    border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+  .plan-name { font-size: 16px; font-weight: 700; color: var(--text-sec); margin-bottom: 8px; }
+  .plan-price { font-size: 40px; font-weight: 900; color: var(--text-pri); }
+  .plan-price span { font-size: 16px; color: var(--text-sec); font-weight: 400; }
+  .plan-commission { color: var(--text-sec); font-size: 14px; margin: 4px 0 20px; }
+  .plan-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .plan-features { text-align: right; }
+  .plan-features li {
+    list-style: none; padding: 6px 0;
+    color: var(--text-sec); font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .plan-features li::before { content: '✓'; color: var(--green); }
+  .plan-btn {
+    display: block; margin-top: 24px; padding: 12px;
+    border-radius: 10px; font-weight: 700; font-size: 14px;
+    text-decoration: none; transition: all 0.2s;
+    font-family: 'Cairo', sans-serif;
+  }
+  .plan-btn-outline {
+    border: 1px solid var(--border); color: var(--text-pri);
+  }
+  .plan-btn-outline:hover { border-color: var(--primary); background: rgba(59,130,246,0.05); }
+  .plan-btn-primary {
+    background: var(--primary); color: white;
+    box-shadow: 0 8px 20px rgba(59,130,246,0.3);
+  }
+  .plan-btn-primary:hover { background: #2563eb; }
+
+  /* ── TECH STACK ─────────────────────────────────────────────────────── */
+  .tech-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-top: 40px;
+  }
+  .tech-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; font-weight: 600;
+    transition: border-color 0.2s;
+  }
+  .tech-item:hover { border-color: var(--primary); }
+  .tech-item .badge {
+    font-size: 10px; background: rgba(59,130,246,0.15);
+    color: var(--primary); padding: 2px 8px; border-radius: 6px;
+    margin-right: auto; font-weight: 700;
+  }
+
+  /* ── CTA ────────────────────────────────────────────────────────────── */
+  .cta-section {
+    margin: 0 5% 80px; padding: 64px;
+    background: linear-gradient(135deg, #0F2644, #1a0f3d);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 24px; text-align: center;
+  }
+  .cta-section h2 { font-size: 40px; font-weight: 900; margin-bottom: 16px; }
+  .cta-section p  { color: var(--text-sec); font-size: 18px; margin-bottom: 32px; }
+
+  /* ── FOOTER ─────────────────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  footer p { color: var(--text-sec); font-size: 14px; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: var(--text-sec); text-decoration: none; font-size: 14px; }
+  .footer-links a:hover { color: var(--primary); }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .hero-grid    { grid-template-columns: 1fr; }
+    .phone-mockup { display: none; }
+    .features-grid{ grid-template-columns: 1fr; }
+    .roles-grid   { grid-template-columns: 1fr; }
+    .plans-grid   { grid-template-columns: 1fr; }
+    .stats        { grid-template-columns: repeat(2, 1fr); }
+    .tech-grid    { grid-template-columns: repeat(2, 1fr); }
+    .nav-links    { display: none; }
+    .cta-section  { padding: 40px 24px; }
+  }
+
+  /* ── ANIMATIONS ─────────────────────────────────────────────────────── */
+  @keyframes pulse-ring {
+    0%   { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+  .live-dot {
+    display: inline-block; width: 8px; height: 8px;
+    background: var(--green); border-radius: 50%; position: relative;
+  }
+  .live-dot::after {
+    content: ''; position: absolute; inset: -4px;
+    background: var(--green); border-radius: 50%;
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">🏬 MallX</a>
+  <div class="nav-links">
+    <a href="#features">الميزات</a>
+    <a href="#roles">من يستخدمه</a>
+    <a href="#plans">الخطط</a>
+    <a href="#tech">التقنية</a>
+    <a href="#contact">تواصل معنا</a>
+  </div>
+  <a href="#plans" class="nav-cta">ابدأ مجاناً</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-tag">
+        <span class="live-dot"></span>
+        النظام الأول من نوعه في مصر
+      </div>
+      <h1>كل اللي محتاجه في <span>مول واحد</span></h1>
+      <p>
+        MallX هو نظام تشغيل المول الذكي — يربط العملاء بالمحلات والمطاعم والخدمات في تطبيق واحد،
+        مع نظام طلبات متعدد المحلات، تتبع مباشر، ونقاط ولاء موحدة.
+      </p>
+      <div class="hero-actions">
+        <a href="#plans" class="btn-primary-hero">🚀 ابدأ الآن مجاناً</a>
+        <a href="#features" class="btn-outline-hero">📖 اعرف أكتر</a>
+      </div>
+    </div>
+
+    <div class="phone-mockup">
+      <div class="glow-ring"></div>
+      <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-header">
+            <p>مرحباً، أحمد 👋</p>
+            <h3>اكتشف عروض اليوم</h3>
+          </div>
+          <div class="phone-card">
+            <div class="phone-icon" style="background: rgba(245,158,11,0.15);">🍔</div>
+            <div class="phone-card-text">
+              <div class="phone-card-title">مطعم الشيف</div>
+              <div class="phone-card-sub">⭐ 4.8 · 15 دقيقة</div>
+            </div>
+            <div class="phone-badge">جديد</div>
+          </div>
+          <div class="phone-card">
+            <div class="phone-icon" style="background: rgba(59,130,246,0.15);">👗</div>
+            <div class="phone-card-text">
+              <div class="phone-card-title">متجر الموضة</div>
+              <div class="phone-card-sub">⭐ 4.6 · خصم 30%</div>
+            </div>
+            <div class="phone-badge" style="background:rgba(16,185,129,0.15);color:#10b981;">عرض</div>
+          </div>
+          <div class="phone-card">
+            <div class="phone-icon" style="background: rgba(139,92,246,0.15);">💅</div>
+            <div class="phone-card-text">
+              <div class="phone-card-title">صالون بيوتي</div>
+              <div class="phone-card-sub">⭐ 4.9 · حجز متاح</div>
+            </div>
+          </div>
+          <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:10px;margin-top:8px;">
+            <div style="font-size:10px;color:#94a3b8;">نقاط الولاء</div>
+            <div style="font-size:20px;font-weight:900;color:#3b82f6;">2,840 نقطة 🥈</div>
+            <div style="font-size:9px;color:#94a3b8;">باقي 2,160 للـ Gold</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div style="padding: 0 5%;">
+  <div class="stats">
+    <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Endpoint API</div></div>
+    <div class="stat"><div class="stat-num">16K+</div><div class="stat-label">سطر كود</div></div>
+    <div class="stat"><div class="stat-num">6</div><div class="stat-label">مراحل تطوير</div></div>
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Multi-Tenant</div></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-tag">الميزات</div>
+  <h2>كل ما يحتاجه مولك في نظام واحد</h2>
+  <p class="lead">من إدارة الطلبات والتوصيل إلى نظام الولاء والحجوزات — MallX يغطي كل شيء.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.15);">🛒</div>
+      <h3>سلة متعددة المحلات</h3>
+      <p>العميل يضيف من محلات مختلفة في سلة واحدة، والنظام يفصل الطلبات تلقائياً لكل محل.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.15);">🍔</div>
+      <h3>نظام المطاعم والطابور</h3>
+      <p>منيو رقمي كامل مع أوقات تحضير وتذكرة انتظار ذكية يتابعها العميل مباشرة.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.15);">📅</div>
+      <h3>نظام الحجوزات</h3>
+      <p>حجز مواعيد للصالونات والصالات والعيادات مع إدارة المواظفين وجداول العمل.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.15);">⭐</div>
+      <h3>نقاط الولاء الموحدة</h3>
+      <p>نقاط تُجمع من كل محلات المول، مع 3 مستويات (Bronze/Silver/Gold) وفوائد تصاعدية.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(239,68,68,0.15);">⚡</div>
+      <h3>Flash Sales وكوبونات</h3>
+      <p>عروض محدودة بعداد تنازلي، كوبونات خصم قابلة للتخصيص، وإشعارات push ذكية.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(6,182,212,0.15);">📡</div>
+      <h3>تتبع مباشر Real-time</h3>
+      <p>تتبع حالة الطلب وموقع السائق في الوقت الفعلي عبر SignalR WebSockets.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.15);">🗺️</div>
+      <h3>خريطة المول التفاعلية</h3>
+      <p>خريطة بالطوابق مع مواقع المحلات والمرافق، بحث داخل المول ورموز QR لكل محل.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.15);">💳</div>
+      <h3>بوابات دفع متعددة</h3>
+      <p>كاش عند الاستلام، فيزا/ماستركارد عبر Paymob، Fawry، وفودافون كاش.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.15);">📊</div>
+      <h3>تقارير وعمولات</h3>
+      <p>لوحة تحكم للأدمن بإجمالي المبيعات والعمولات، مع تسويات شهرية تلقائية لكل محل.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES -->
+<section class="section" id="roles" style="margin-top: -40px;">
+  <div class="section-tag">من يستخدمه</div>
+  <h2>مصمم لكل دور في المول</h2>
+
+  <div class="roles-grid">
+    <div class="role-card" data-emoji="👤">
+      <div style="font-size:28px;margin-bottom:12px;">👤</div>
+      <h3 style="color:#3b82f6;">العميل</h3>
+      <ul>
+        <li>تصفح المحلات والمنتجات والمنيو</li>
+        <li>سلة تسوق متعددة المحلات</li>
+        <li>تتبع الطلب مباشرة</li>
+        <li>حجز مواعيد للصالونات والخدمات</li>
+        <li>نقاط ولاء ومكافآت</li>
+        <li>عروض وكوبونات حصرية</li>
+      </ul>
+    </div>
+    <div class="role-card" data-emoji="🏪">
+      <div style="font-size:28px;margin-bottom:12px;">🏪</div>
+      <h3 style="color:#10b981;">صاحب المحل</h3>
+      <ul>
+        <li>لوحة تحكم للطلبات الواردة</li>
+        <li>إدارة المنيو والمنتجات</li>
+        <li>طابور المطعم بتحديث مباشر</li>
+        <li>جدول الحجوزات اليومي</li>
+        <li>تقارير المبيعات والعمولات</li>
+        <li>الرد على تقييمات العملاء</li>
+      </ul>
+    </div>
+    <div class="role-card" data-emoji="🏢">
+      <div style="font-size:28px;margin-bottom:12px;">🏢</div>
+      <h3 style="color:#f59e0b;">أدمن المول</h3>
+      <ul>
+        <li>KPIs شاملة للمول كله</li>
+        <li>تقارير العمولات بالمحل</li>
+        <li>إنشاء كوبونات وفلاش سيل</li>
+        <li>حملات إشعارات مستهدفة</li>
+        <li>إدارة خريطة المول</li>
+        <li>تسويات مالية للمحلات</li>
+      </ul>
+    </div>
+    <div class="role-card" data-emoji="🚗">
+      <div style="font-size:28px;margin-bottom:12px;">🚗</div>
+      <h3 style="color:#8b5cf6;">السائق</h3>
+      <ul>
+        <li>استقبال تكليفات التوصيل</li>
+        <li>مشاركة الموقع مباشرة</li>
+        <li>تحديث حالة الطلب</li>
+        <li>قائمة بكل المحلات للاستلام</li>
+        <li>مسار التوصيل المحسن</li>
+        <li>سجل الرحلات والأرباح</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PLANS -->
+<section class="section" id="plans" style="margin-top: -40px;">
+  <div class="section-tag">الخطط</div>
+  <h2>نموذج إيرادات مرن</h2>
+  <p class="lead">اختار النموذج الأنسب لمولك — اشتراك شهري أو عمولة على الطلبات أو كليهما.</p>
+
+  <div class="plans-grid">
+    <div class="plan-card">
+      <div class="plan-name">Basic</div>
+      <div class="plan-price">200 <span>ج.م/شهر</span></div>
+      <div class="plan-commission">+ 5% عمولة على الطلبات</div>
+      <hr class="plan-divider">
+      <ul class="plan-features">
+        <li>حتى فرع واحد</li>
+        <li>5 مستخدمين</li>
+        <li>500 منتج</li>
+        <li>طلبات + توصيل</li>
+        <li>لوحة تحكم أساسية</li>
+      </ul>
+      <a href="#contact" class="plan-btn plan-btn-outline">ابدأ مجاناً</a>
+    </div>
+
+    <div class="plan-card featured">
+      <div class="plan-badge">⭐ الأكثر شعبية</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">499 <span>ج.م/شهر</span></div>
+      <div class="plan-commission">+ 3% عمولة على الطلبات</div>
+      <hr class="plan-divider">
+      <ul class="plan-features">
+        <li>حتى 5 فروع</li>
+        <li>20 مستخدم</li>
+        <li>5,000 منتج</li>
+        <li>AI توصيات + تحليلات</li>
+        <li>المطاعم + الحجوزات</li>
+        <li>نظام الولاء والكوبونات</li>
+        <li>Flash Sales وPush Notifications</li>
+      </ul>
+      <a href="#contact" class="plan-btn plan-btn-primary">ابدأ الآن</a>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price" style="font-size:28px;">تواصل معنا</div>
+      <div class="plan-commission">+ 1.5% عمولة مخفضة</div>
+      <hr class="plan-divider">
+      <ul class="plan-features">
+        <li>فروع غير محدودة</li>
+        <li>مستخدمون غير محدودون</li>
+        <li>منتجات غير محدودة</li>
+        <li>Custom branding</li>
+        <li>SLA مضمون</li>
+        <li>دعم مخصص 24/7</li>
+      </ul>
+      <a href="#contact" class="plan-btn plan-btn-outline">تحدث معنا</a>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section class="section" id="tech" style="margin-top: -40px;">
+  <div class="section-tag">التقنية</div>
+  <h2>مبني على أحدث التقنيات</h2>
+  <p class="lead">Stack احترافي يضمن الأداء، الأمان، والقدرة على التوسع مع نمو مولك.</p>
+
+  <div class="tech-grid">
+    <div class="tech-item">⚙️ ASP.NET Core 8<div class="badge">Backend</div></div>
+    <div class="tech-item">🐘 PostgreSQL 16<div class="badge">Database</div></div>
+    <div class="tech-item">⚡ Redis 7<div class="badge">Cache</div></div>
+    <div class="tech-item">📡 SignalR<div class="badge">Real-time</div></div>
+    <div class="tech-item">📱 Flutter<div class="badge">Mobile</div></div>
+    <div class="tech-item">⚛️ Next.js 14<div class="badge">Dashboard</div></div>
+    <div class="tech-item">🐳 Docker<div class="badge">Deploy</div></div>
+    <div class="tech-item">🔔 Firebase FCM<div class="badge">Push</div></div>
+    <div class="tech-item">💳 Paymob<div class="badge">Payment</div></div>
+    <div class="tech-item">🔐 JWT + BCrypt<div class="badge">Security</div></div>
+    <div class="tech-item">🗺️ Google Maps<div class="badge">Geo</div></div>
+    <div class="tech-item">🤖 AI Engine<div class="badge">Smart</div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div id="contact">
+  <div class="cta-section">
+    <h2>جاهز لرقمنة مولك؟ 🚀</h2>
+    <p>تواصل معنا اليوم وانضم لأول نظام تشغيل مول ذكي في مصر</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="mailto:info@mallx.app" class="btn-primary-hero">📧 info@mallx.app</a>
+      <a href="tel:+20" class="btn-outline-hero">📞 اتصل بنا</a>
+    </div>
+    <p style="margin-top:24px;color:var(--text-sec);font-size:13px;">
+      نسخة تجريبية مجانية 14 يوم — بدون بطاقة ائتمانية
+    </p>
+  </div>
+</div>
+
+<footer>
+  <a href="#" class="nav-logo" style="font-size:18px;">🏬 MallX</a>
+  <p style="color:var(--text-sec);font-size:13px;">© 2026 Excellence86 — كل الحقوق محفوظة</p>
+  <div class="footer-links">
+    <a href="#">سياسة الخصوصية</a>
+    <a href="#">شروط الاستخدام</a>
+    <a href="#contact">تواصل معنا</a>
+  </div>
+</footer>
+
+</body>
+</html>

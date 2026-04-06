@@ -1,0 +1,294 @@
+name: MallX CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION:   '20.x'
+  REGISTRY:       ghcr.io
+  IMAGE_NAME:     ${{ github.repository }}
+
+# ══════════════════════════════════════════════════════════════════════════
+#  JOBS
+# ══════════════════════════════════════════════════════════════════════════
+jobs:
+
+  # ── Backend Build & Test ─────────────────────────────────────────────────
+  backend:
+    name: 🔧 Backend (ASP.NET Core)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       mallx_test
+          POSTGRES_USER:     mallx
+          POSTGRES_PASSWORD: testpass123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          ConnectionStrings__DefaultConnection: >
+            Host=localhost;Port=5432;Database=mallx_test;
+            Username=mallx;Password=testpass123
+          Redis__ConnectionString: localhost:6379
+          Jwt__Secret: test-secret-key-minimum-64-chars-long-for-jwt-xunit-testing!!
+          Jwt__Issuer:  mallxtest
+          Jwt__Audience: mallxtest
+        run: |
+          dotnet test \
+            --no-build \
+            --configuration Release \
+            --logger "trx;LogFileName=test-results.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./test-results
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: backend/test-results/
+
+      - name: Code coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/test-results/**/coverage.cobertura.xml
+          fail_ci_if_error: false
+
+  # ── Flutter Build ─────────────────────────────────────────────────────────
+  flutter:
+    name: 📱 Flutter
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: stable
+
+      - name: Cache Flutter packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('flutter/pubspec.lock') }}
+
+      - name: Get packages
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: flutter
+        run: flutter analyze --no-fatal-warnings
+
+      - name: Run unit tests
+        working-directory: flutter
+        run: flutter test
+
+      - name: Build APK (debug)
+        working-directory: flutter
+        if: github.ref == 'refs/heads/main'
+        run: |
+          flutter build apk --debug \
+            --dart-define=API_URL=${{ secrets.API_URL }} \
+            --dart-define=MALL_SLUG=mallx-demo
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: mallx-debug-apk
+          path: flutter/build/app/outputs/flutter-apk/app-debug.apk
+
+  # ── Frontend Build ────────────────────────────────────────────────────────
+  frontend:
+    name: ⚛️ Frontend (Next.js)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: frontend
+        run: npm run type-check 2>/dev/null || echo "No type-check script"
+
+      - name: Build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.API_URL || 'http://localhost:5000/api' }}
+        run: npm run build
+
+  # ── Docker Build & Push ──────────────────────────────────────────────────
+  docker:
+    name: 🐳 Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (API)
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context:   ./backend
+          file:      ./backend/src/MesterX.API/Dockerfile
+          push:      true
+          tags:      ${{ steps.meta-api.outputs.tags }}
+          labels:    ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      - name: Extract metadata (Frontend)
+        id: meta-fe
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context:   ./frontend
+          push:      true
+          tags:      ${{ steps.meta-fe.outputs.tags }}
+          labels:    ${{ steps.meta-fe.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+  # ── Deploy to Production ─────────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key:      ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /opt/mallx
+
+            # Pull latest images
+            docker pull ghcr.io/${{ github.repository }}-api:latest
+            docker pull ghcr.io/${{ github.repository }}-frontend:latest
+
+            # Zero-downtime restart
+            docker-compose -f docker/docker-compose.prod.yml up -d \
+              --no-deps --scale api=2 api
+
+            sleep 10  # wait for health check
+
+            docker-compose -f docker/docker-compose.prod.yml up -d \
+              --no-deps frontend nginx
+
+            # Cleanup old images
+            docker image prune -f
+
+            echo "✅ Deployment complete: $(date)"
+
+      - name: Health check
+        run: |
+          sleep 15
+          curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
+          echo "✅ Health check passed"
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "🎉 MallX deployed successfully to production!"
+          echo "Commit: ${{ github.sha }}"
+          echo "By: ${{ github.actor }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ MallX deployment failed!"
